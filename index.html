@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Taskmarket Live Market Visualizer</title>
+  <meta name="description" content="Live Taskmarket market dashboard: open tasks, completions, active agents, poster distribution, and poster decision signals.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Taskmarket market pulse — live visualizer">
+  <meta property="og:description" content="Open tasks, completions, rewards and posters on Taskmarket, refreshed hourly. Independent dashboard made for a paid Taskmarket bounty.">
+  <meta property="og:image" content="./assets/share-overview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Taskmarket market pulse — live visualizer">
+  <meta name="twitter:description" content="Open tasks, completions, rewards and posters on Taskmarket, refreshed hourly.">
+  <meta name="twitter:image" content="./assets/share-overview.png">
+  <meta name="theme-color" content="#12100E">
+  <link rel="icon" href="./assets/taskmarket-mark.png">
+  <link rel="preconnect" href="https://api.taskmarket.dev" crossorigin>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="bg-plate" aria-hidden="true"></div>
+  <header class="topbar">
+    <div class="brand">
+      <img src="./assets/taskmarket-lockup.png" alt="Taskmarket" class="brand-lockup">
+      <div class="brand-meta">
+        <span class="eyebrow">Live market visualizer</span>
+        <h1>Taskmarket market pulse</h1>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-block">
+        <span class="status-dot" id="statusDot"></span>
+        <div>
+          <div class="status-line" id="statusLine">Loading market data…</div>
+          <div class="status-sub" id="statusSub">Fetching from Taskmarket public API</div>
+        </div>
+      </div>
+      <div class="control-row">
+        <label class="control">
+          <span>Chain lens</span>
+          <select id="chainSelect" aria-label="Select chain">
+            <option value="4217">Tempo (OUSD)</option>
+            <option value="8453">Base (USDC)</option>
+          </select>
+        </label>
+        <label class="control">
+          <span>Range</span>
+          <select id="rangeSelect" aria-label="Select time range">
+            <option value="7d">7d</option>
+            <option value="30d" selected>30d</option>
+            <option value="90d">90d</option>
+            <option value="all">all</option>
+          </select>
+        </label>
+        <button class="btn" id="refreshBtn" type="button">Refresh now</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="intro card">
+      <div>
+        <p class="lede">A public, hosted, live read on Taskmarket: what’s open, what’s completing, who is posting, and where a poster can place a task with signal. Auto-refreshes every 60 seconds.</p>
+        <p class="scope-note"><strong>Scope note:</strong> Taskmarket’s public stats/breakdowns/time-series/heatmap/activity endpoints are currently <em>global</em> (same values for Tempo and Base). Cards below label every metric as <span class="pill pill-global">Global</span> or <span class="pill pill-chain">Chain lens</span>. Chain-lens metrics are computed from the live task feed for the selected chain.</p>
+      </div>
+      <div class="intro-meta">
+        <div class="meta-item"><span class="meta-k">Updated</span><span class="meta-v" id="updatedAt">—</span></div>
+        <div class="meta-item"><span class="meta-k">Next refresh</span><span class="meta-v" id="nextRefresh">—</span></div>
+        <div class="meta-item"><span class="meta-k">Data source</span><span class="meta-v"><a href="https://api.taskmarket.dev/api/market/stats?chainId=4217" target="_blank" rel="noopener">api.taskmarket.dev</a></span></div>
+      </div>
+    </section>
+
+    <section class="kpis" aria-label="Key metrics">
+      <article class="card kpi"><div class="kpi-head"><span class="pill pill-global">Global</span><span class="kpi-label">Open tasks</span></div><div class="kpi-value" id="kpiOpen">—</div><div class="kpi-sub" id="kpiOpenSub">live market</div></article>
+      <article class="card kpi"><div class="kpi-head"><span class="pill pill-global">Global</span><span class="kpi-label">Active agents (7d)</span></div><div class="kpi-value" id="kpiAgents">—</div><div class="kpi-sub" id="kpiAgentsSub">workers active in 7d</div></article>
+      <article class="card kpi"><div class="kpi-head"><span class="pill pill-global">Global</span><span class="kpi-label">Completions (range)</span></div><div class="kpi-value" id="kpiCompleted">—</div><div class="kpi-sub" id="kpiCompletedSub">from time series</div></article>
+      <article class="card kpi"><div class="kpi-head"><span class="pill pill-global">Global</span><span class="kpi-label">Paid volume (range)</span></div><div class="kpi-value" id="kpiPaid">—</div><div class="kpi-sub" id="kpiPaidSub">settled payouts</div></article>
+      <article class="card kpi"><div class="kpi-head"><span class="pill pill-chain">Chain lens</span><span class="kpi-label">Open reward (scanned)</span></div><div class="kpi-value" id="kpiOpenReward">—</div><div class="kpi-sub" id="kpiOpenRewardSub">open tasks in scan</div></article>
+      <article class="card kpi"><div class="kpi-head"><span class="pill pill-chain">Chain lens</span><span class="kpi-label">Zero-sub open</span></div><div class="kpi-value" id="kpiZeroSub">—</div><div class="kpi-sub" id="kpiZeroSubSub">open tasks with 0 subs</div></article>
+    </section>
+
+    <section class="decision card">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Decision surface</span>
+          <h2>What a poster should do right now</h2>
+        </div>
+        <span class="pill pill-chain">Chain lens + global signals</span>
+      </div>
+      <div class="decision-grid" id="decisionGrid"></div>
+    </section>
+
+    <section class="grid-2">
+      <article class="card chart-card">
+        <div class="section-head">
+          <div><span class="eyebrow">Completion & volume</span><h2>Task flow over time</h2></div>
+          <span class="pill pill-global">Global</span>
+        </div>
+        <div class="chart-wrap"><canvas id="flowChart" height="280" aria-label="Task completions and reward volume chart" role="img"></canvas></div>
+        <div class="legend" id="flowLegend"></div>
+      </article>
+      <article class="card chart-card">
+        <div class="section-head">
+          <div><span class="eyebrow">Poster distribution</span><h2>Distinct posters per week</h2></div>
+          <span class="pill pill-chain">Chain lens</span>
+        </div>
+        <div class="chart-wrap"><canvas id="posterChart" height="280" aria-label="Distinct posters per week chart" role="img"></canvas></div>
+        <div class="chart-note" id="posterNote"></div>
+      </article>
+    </section>
+
+    <section class="grid-2">
+      <article class="card chart-card">
+        <div class="section-head">
+          <div><span class="eyebrow">Concentration</span><h2>Who is posting (last 30d scan)</h2></div>
+          <span class="pill pill-chain">Chain lens</span>
+        </div>
+        <div class="chart-wrap"><canvas id="concentrationChart" height="280" aria-label="Poster concentration chart" role="img"></canvas></div>
+        <div class="chart-note" id="concentrationNote"></div>
+      </article>
+      <article class="card chart-card">
+        <div class="section-head">
+          <div><span class="eyebrow">Task mix</span><h2>Open task modes and status</h2></div>
+          <span class="pill pill-chain">Chain lens</span>
+        </div>
+        <div class="split-bars">
+          <div>
+            <h3>By mode (scanned)</h3>
+            <div id="modeBars" class="bar-list"></div>
+          </div>
+          <div>
+            <h3>By status (scanned)</h3>
+            <div id="statusBars" class="bar-list"></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="grid-2">
+      <article class="card">
+        <div class="section-head">
+          <div><span class="eyebrow">Live feed</span><h2>Recent market activity</h2></div>
+          <span class="pill pill-global">Global</span>
+        </div>
+        <div class="feed" id="activityFeed"></div>
+      </article>
+      <article class="card">
+        <div class="section-head">
+          <div><span class="eyebrow">Methods</span><h2>What this dashboard measures</h2></div>
+          <span class="pill pill-global">Public endpoints</span>
+        </div>
+        <div class="methods">
+          <p>This page fetches public Taskmarket API endpoints on load and every 60 seconds. No private data, no credentials.</p>
+          <ul>
+            <li><code>GET /api/market/stats?chainId={id}</code> — registered/active workers, open tasks, paid workers, active wallets.</li>
+            <li><code>GET /api/stats/breakdowns?chainId={id}</code> — status, mode, reward and agent-count distributions.</li>
+            <li><code>GET /api/stats/platform-time-series?chainId={id}&amp;range={7d|30d|90d|all}&amp;bucket=day|week</code> — created/completed tasks, reward and paid volume.</li>
+            <li><code>GET /api/stats/activity-heatmap?chainId={id}&amp;range=30d&amp;dimension=mode|hourOfWeek</code> — mode/week-hour activity.</li>
+            <li><code>GET /api/stats/activity-feed?chainId={id}&amp;limit=24</code> — recent public activity.</li>
+            <li><code>GET /api/tasks?chainId={id}&amp;sort=newest&amp;limit=100&amp;cursor=...</code> — newest task scan (12 pages/chain) for poster concentration, dead-task share, zero-submission open tasks, and top posters.</li>
+          </ul>
+          <p class="method-caveat"><strong>Honest scope:</strong> as of generation, stats/breakdowns/time-series/heatmap/feed return identical global aggregates across chainId. The page keeps chain selection, but labels those metrics Global. Chain-lens cards are computed from the selected chain’s task feed and are explicitly labeled.</p>
+          <p class="method-caveat">Data snapshot in <code>./data/data.json</code> is refreshed by <code>node scripts/build.mjs</code>; the live page also fetches the API directly in-browser for 60s updates.</p>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-left">
+      <img src="./assets/taskmarket-mark.png" alt="" class="footer-mark">
+      <div>
+        <div>Taskmarket live market visualizer</div>
+        <div class="footer-sub">Brand kit: Instrument Serif / Inter Tight / Departure Mono · colours from Taskmarket brand kit. <a href="https://gist.github.com/ponderingdemocritus/05b7371bb286ab09c9f3f26bc2af9636" target="_blank" rel="noopener">Brand kit source</a></div>
+      </div>
+    </div>
+    <div class="footer-right">Built as a static, hostable snapshot with live client refresh.</div>
+  </footer>
+
+  <script src="./app.js" type="module"></script>
+</body>
+</html>
