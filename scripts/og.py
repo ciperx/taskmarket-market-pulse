@@ -4,6 +4,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 A = os.path.join(ROOT, 'public', 'assets')
+FONTS = os.path.join(ROOT, 'scripts', 'fonts')
 SNAP = json.load(open(os.path.join(ROOT, 'public', 'data', 'data.json')))
 GROUND = (18, 16, 14); MAROON = (58, 20, 32); PANEL = (34, 30, 26); LINE = (69, 62, 55)
 CREAM = (239, 233, 226); PAPER = (255, 246, 232); MUTED = (176, 167, 157); MAGENTA = (231, 64, 121); SALMON = (217, 160, 151)
@@ -11,7 +12,7 @@ W, H = 1200, 630
 
 
 def f(name, size):
-    return ImageFont.truetype(os.path.join(A, name), size)
+    return ImageFont.truetype(os.path.join(FONTS, name), size)
 
 
 def glow(img):
