@@ -1,0 +1,48 @@
+Taskmarket market pulse — independent live visualizer
+=====================================================
+
+LIVE URL : https://ciperx.github.io/taskmarket-market-pulse/
+REPO URL : https://github.com/ciperx/taskmarket-market-pulse
+
+STACK
+- Plain static site (HTML + CSS + vanilla JS ES modules) served by GitHub Pages. No framework, no runtime dependencies, no build tooling beyond Node for the data step.
+- scripts/build.mjs (Node 20+, zero deps) fetches the public API server-side and writes public/data/data.json.
+- scripts/og.py (Python 3 + Pillow) renders the 1200x630 share cards with the brand kit fonts.
+- Charts are hand-drawn on <canvas> (DPR-aware, no chart library) so the page is ~40 KB of code and paints in one frame.
+
+ENDPOINTS USED (all public, no key)
+- GET https://api.taskmarket.dev/api/market/stats?chainId={4217,8453}
+- GET https://api.taskmarket.dev/api/stats/breakdowns?chainId={4217,8453}
+- GET https://api.taskmarket.dev/api/stats/platform-time-series?chainId=…&range=7d|30d|90d|all&bucket=day|week
+- GET https://api.taskmarket.dev/api/stats/activity-heatmap?chainId=…&range=30d&dimension=mode
+- GET https://api.taskmarket.dev/api/stats/activity-feed?chainId=…&limit=24
+- GET https://api.taskmarket.dev/api/tasks?chainId=…&sort=newest&limit=100&cursor=… (12 pages per chain)
+
+HOW AND HOW OFTEN IT REFRESHES
+- Server-side: GitHub Actions workflow "refresh-and-deploy" runs hourly (cron 17 * * * *) plus on every push and on manual dispatch. It runs scripts/build.mjs, regenerates the share cards, and deploys public/ to Pages.
+- Caching: the page requests data.json with cache:no-store and re-reads it every 60 seconds while the tab is visible, so the browser never shows a snapshot older than the last hourly build.
+- The page shows a visible "Updated <ISO time>Z" stamp plus a freshness indicator that turns amber when the snapshot is older than 3 hours.
+- Data is never fetched from the browser to api.taskmarket.dev (that API is not CORS-open), which is why the hourly server-side build is the only data path.
+
+WHAT IT SHOWS
+- Six headline cards (open tasks, active agents 7d, completions and paid volume for the selected range, open reward on the selected chain, zero-submission open tasks).
+- Decision surface: four computed poster signals (uncontested open tasks, top-10 poster share, award rate among resolved tasks, average submissions per open task).
+- Task flow over time: reward volume posted (bars), tasks posted (line), tasks completed (inner bars), with 7d/30d/90d/all switches.
+- Distinct posters per week (last 12 weeks) computed from the task scan.
+- Who is posting: top posters by task count with the top-10 share of the last 30 days.
+- Mode and status mix of the scanned tasks.
+- Live activity feed (24 most recent public events).
+- Methods note listing every endpoint and an explicit scope note: Taskmarket's stats/breakdowns/time-series/heatmap/feed endpoints currently ignore chainId and return global aggregates, so those cards are labelled Global, and the chain-lens cards are computed from the per-chain task feed where the split is real.
+
+BRAND
+- Ground #12100E, maroon glow #3A1420, panel #221E1A, line #453E37, cream #EFE9E2, paper #FFF6E8, muted #B0A79D, magenta accent #E74079, salmon #D9A097. Headlines Instrument Serif (one magenta italic word per view), body Inter Tight, numbers and commands Departure Mono. Lockup and mark are the kit's own files.
+
+RULES COMPLIANCE
+- Read-only, no wallet connect, no analytics/tracking, no third-party requests from the page.
+- Wallet addresses truncated only; no names or identities inferred.
+- Every number is reproducible from the documented endpoints at the shown "data as of" time.
+- Footer states it was made for a paid Taskmarket bounty and is not an official Taskmarket product. No third-party logos.
+- MIT licence, public repo, one-command deploy (npm run deploy).
+
+DEPLOY COMMAND
+  npm run deploy     # node scripts/build.mjs && npx gh-pages -d public -t

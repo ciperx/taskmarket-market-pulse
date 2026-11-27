@@ -1,0 +1,15 @@
+{
+  "name": "taskmarket-market-visualizer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Independent, hourly-refreshed dashboard of Taskmarket public market data.",
+  "license": "MIT",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "share": "python3 scripts/og.py",
+    "serve": "python3 -m http.server 8089 --directory public",
+    "deploy": "npm run build && npx --yes gh-pages@6 -d public -t"
+  }
+}
